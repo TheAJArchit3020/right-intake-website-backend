@@ -9,7 +9,6 @@ const { generateInsights } = require("../controllers/insightController");
 router.post("/save-user", dietPlanController.saveUserData);
 router.post("/initiate-payment", dietPlanController.initiatePayment);
 router.post("/verify-payment", dietPlanController.verifyPayment);
-router.post("/save-user-preferences", dietPlanController.saveUserPreferences);
 router.post("/generate-food-preferences", dietPlanController.generateFoodPreferences);
 router.get("/cheat-meal", cheatMeal.getCheatMeals);
 router.post("/calculate-bmi", bmi.calculateBmi);

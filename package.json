@@ -21,6 +21,7 @@
     "mongoose": "^8.8.4",
     "nodemailer": "^6.9.16",
     "pdf-lib": "^1.17.1",
+    "puppeteer": "^23.10.3",
     "razorpay": "^2.9.5",
     "redis": "^4.7.0"
   },

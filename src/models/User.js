@@ -4,19 +4,17 @@ const userSchema = new mongoose.Schema({
   // Basic Identification
   fullName: { type: String, required: true },
   email: { type: String, required: true, unique: true },
-  dateOfBirth: { type: Date, required: true },
   gender: { type: String, enum: ["Male", "Female"], required: true },
   age: { type: Number, required: true },
   mobileNumber: { type: String, unique: true, required: true }, // used as the ID
 
   // Physical Attributes
-  height: { type: Number, required: true },
-  weight: { type: Number, required: true },
+  height: { type: String, required: true }, //change to string
+  weight: { type: String, required: true }, //change to string
   bodyFatPercentage: { 
-    type: Number, 
-    min: 0, 
-    max: 100, 
+    type: String, // Changed to string
   },
+
   nonVegDays: {
     type: [String], 
     default: [], // Only applicable for non-vegetarian users
@@ -26,10 +24,7 @@ const userSchema = new mongoose.Schema({
     enum: ["gym", "home workout", "outdoors"],
     required: true,
   },
-  homeWorkoutEquipment: {
-    type: [String], 
-    default: [],
-  },
+  homeWorkoutEquipment: { type: String, default: "" },
   weeklyTrainingDays: {
     type: String,
     enum: [
@@ -42,7 +37,7 @@ const userSchema = new mongoose.Schema({
   },
 
   healthConditions: { type: [String], default: [] },
-  allergies: { type: [String], default: [] },
+  allergies: { type: String, default: "" }, // only string
 
   // Location
   country: { type: String, required: true },
@@ -52,28 +47,33 @@ const userSchema = new mongoose.Schema({
   // Dietary Preferences
   dietType: {
     type: String,
-    enum: ["vegetarian", "non-vegetarian"],
-    required: true,
+    enum: ["veg", "non-veg"],
+    required: true, 
   },
 
   cheatMeals: {
     type: [String], 
     default: [],
   },
-  mealFrequency: { type: String, required: true },
-  foodPreferences: { type: [String], default: [] },
-  foodAvoidances: { type: [String], default: [] },
+  foodPreferences: {
+    type: [
+      {
+        category: { type: String, required: true },
+        items: { type: [String], default: [] }, // String array
+      },
+    ],
+    default: [],
+  }, //object {category, names}
 
   occupation: { type: String, required: true },
 
   // Fitness Goals
   primaryGoal: { type: String, required: true },
   targetWeight: { type: Number },
-  targetTimeline: { type: String },
 
   // Current Routine
-  sleepHours: { type: Number },
-  waterIntake: { type: Number },
+  sleepHours: { type: String }, // string
+  waterIntake: { type: String }, // string
 
   currentDietPlan: { type: mongoose.Schema.Types.ObjectId, ref: "DietPlan" },
 

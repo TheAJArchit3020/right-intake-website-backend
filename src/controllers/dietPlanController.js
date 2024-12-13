@@ -2,8 +2,9 @@ const dietPlanQueue = require("../services/RedisandBullQueue");
 const User = require("../models/User");
 const crypto = require("crypto");
 const { createOrder } = require("../services/razorpayService");
-const {  generateFoodPreferencesPrompt, retryRequest, extractWrappedJSON } = require("../utils/foodPreferencesUtils");
+const {  generateFoodPreferencesPrompt, retryRequest} = require("../utils/foodPreferencesUtils");
 const axios = require("axios");
+const { extractWrappedJSON } = require("../utils/dietPlanUtils");
 
 
 exports.saveUserData = async (req, res) => {
@@ -84,69 +85,42 @@ exports.verifyPayment = async (req, res) => {
   }
 };
 
-  exports.generateFoodPreferences = async (req, res) => {
-    const { location } = req.body;
-  
-    try {
-      if (!location) {
-        return res.status(400).json({ message: "location is required" });
-      }
-  
-      console.log("Generating food preferences for:", location);
-  
-      const prompt = generateFoodPreferencesPrompt(location);
-  
-      const response = await retryRequest(() =>
-        axios.post(
-          "https://api.openai.com/v1/chat/completions",
-          {
-            model: "gpt-4o-mini",
-            messages: [
-              { role: "system", content: "You are an expert nutritionist and food consultant." },
-              { role: "user", content: prompt },
-            ],
-            max_tokens: 2048,
-            temperature: 0.7,
-          },
-          {
-            headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-          }
-        )
-      );
-  
-      const rawResponse = response.data.choices[0].message.content;
-  
-      const foodList = rawResponse
-        .split("\n") 
-        .reduce((acc, line) => {
-          const [category, items] = line.split(":");
-          if (category && items) {
-            acc[category.trim()] = JSON.parse(items.trim());
-          }
-          return acc;
-        }, {});
-  
-      res.status(200).json(foodList); 
-    } catch (error) {
-      console.error("Error generating food preferences:", error.message);
-      res.status(500).json({ message: "Failed to generate food preferences" });
+exports.generateFoodPreferences = async (req, res) => {
+  const { location } = req.body;
+
+  try {
+    if (!location) {
+      return res.status(400).json({ message: "Location is required" });
     }
-  };
-  
-  exports.saveUserPreferences = async (req, res) => {
-    const { userId, selectedPreferences } = req.body;
-  
-    try {
-      if (!userId || !selectedPreferences) {
-        return res.status(400).json({ message: "userId and selectedPreferences are required" });
-      }
-  
-      console.log(`Saving preferences for userId: ${userId}`);
-      await User.findByIdAndUpdate(userId, { foodPreferences: selectedPreferences });
-  
-      res.status(200).json({ message: "User preferences saved successfully" });
-    } catch (error) {
-      console.error("Error saving user preferences:", error.message);
-      res.status(500).json({ message: "Failed to save user preferences" });
-    }
-  };
+
+    console.log("Generating food preferences for:", location);
+
+    const prompt = generateFoodPreferencesPrompt(location);
+
+    const response = await retryRequest(() =>
+      axios.post(
+        "https://api.openai.com/v1/chat/completions",
+        {
+          model: "gpt-4o-mini",
+          messages: [
+            { role: "system", content: "You are an expert nutritionist and food consultant." },
+            { role: "user", content: prompt },
+          ],
+          max_tokens: 2048,
+          temperature: 0.7,
+        },
+        {
+          headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+        }
+      )
+    );
+
+    const rawResponse = response.data.choices[0].message.content;
+    const foodPreferences = extractWrappedJSON(rawResponse); 
+
+    res.status(200).json(foodPreferences);
+  } catch (error) {
+    console.error("Error generating food preferences:", error.message);
+    res.status(500).json({ message: "Failed to generate food preferences" });
+  }
+};

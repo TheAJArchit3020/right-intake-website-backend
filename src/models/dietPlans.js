@@ -1,7 +1,7 @@
-const mongoose= require('mongoose')
+const mongoose = require('mongoose');
 
 const DietPlanSchema = new mongoose.Schema({
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User",index: true  },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", index: true },
   startDate: Date,
   endDate: Date,
   days: [
@@ -20,6 +20,12 @@ const DietPlanSchema = new mongoose.Schema({
           ],
           totalCalories: Number,
         },
+        snacks: {
+          items: [
+            { name: String, quantity: String, calories: Number, macronutrients: { protein: Number, carbs: Number, fats: Number } },
+          ],
+          totalCalories: Number,
+        },
         dinner: {
           items: [
             { name: String, quantity: String, calories: Number, macronutrients: { protein: Number, carbs: Number, fats: Number } },
@@ -27,17 +33,10 @@ const DietPlanSchema = new mongoose.Schema({
           totalCalories: Number,
         },
       },
-      workout: {
-        warmUp: [
-          { name: String, sets: Number, reps: Number },
-        ],
-        mainWorkout: [
-          { name: String, sets: Number, reps: Number },
-        ],
-        stretching: [
-          { name: String, duration: String },
-        ],
-      },
+      workout: [
+        { name: String, sets: Number, reps: String },
+      ],
+      totalDayCalories: Number,
     },
   ],
 });
