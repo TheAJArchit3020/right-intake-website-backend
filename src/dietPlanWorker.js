@@ -83,15 +83,15 @@ connectDB()
       await dietPlan.save();
       console.log("Diet plan saved successfully.");
   
-      console.log("Generating PDF...");
-      const pdfFilePath = await generateDietPlanPDF(dietPlan, { fullName: user.fullName });
+      // console.log("Generating PDF...");
+      // const pdfFilePath = await generateDietPlanPDF(dietPlan, { fullName: user.fullName });
   
-      console.log(`Sending email to ${email}...`);
-      const htmlContent = generateEmailContent(dietPlan, { fullName: user.fullName });
+      // console.log(`Sending email to ${email}...`);
+      // const htmlContent = generateEmailContent(dietPlan, { fullName: user.fullName });
   
-      await sendDietPlanEmail(email, "Your Customized Diet Plan", htmlContent, pdfFilePath);
+      // await sendDietPlanEmail(email, "Your Customized Diet Plan", htmlContent, pdfFilePath);
   
-      console.log("Email sent successfully.");
+      // console.log("Email sent successfully.");
       done(null, { success: true });
     } catch (error) {
       console.error("Job processing failed:", error.message);
