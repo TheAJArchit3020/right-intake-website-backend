@@ -4,7 +4,8 @@ const dietPlanQueue = require("./services/RedisandBullQueue");
 const { generateDietPlanPrompt, generateSystemPrompt, extractWrappedJSON, retryRequest } = require("./utils/dietPlanUtils");
 const { sendDietPlanEmail, generateEmailContent } = require("./services/emailService");
 const axios = require("axios")
-const User = require("./models/User"); 
+const User = require("./models/User");
+const fs = require("fs"); 
 const { generateDietPlanPDF } = require("./services/pdfservice");
 const DietPlan = require("./models/dietPlans");
 const connectDB = require("./config/db");
@@ -18,23 +19,17 @@ connectDB()
   });
   dietPlanQueue.process(async (job, done) => {
     try {
-      const { userId } = job.data; 
-  
-      if (!userId) {
-        throw new Error("Missing userId in job data");
-      }
+      const { userId } = job.data;
+      if (!userId) throw new Error("Missing userId in job data");
   
       console.log(`Fetching user data for userId: ${userId}`);
       const user = await User.findById(userId);
-      if (!user) {
-        throw new Error("User not found");
-      }
+      if (!user) throw new Error("User not found");
   
-      const email = user.email; 
+      const email = user.email;
       console.log(`Generating diet plan for userId: ${userId}, email: ${email}`);
   
-      const totalDays = 30;
-      const chunkSize = 10;
+      const totalDays = 4;
       const dietPlanChunks = [];
   
       const startDate = new Date();
@@ -43,9 +38,9 @@ connectDB()
   
       const systemPrompt = generateSystemPrompt();
   
-      for (let daysOffset = 0; daysOffset < totalDays; daysOffset += chunkSize) {
+      for (let daysOffset = 0; daysOffset < totalDays; daysOffset += 2) {
         const prompt = generateDietPlanPrompt(user, daysOffset);
-        console.log(`Generating prompt for days ${daysOffset + 1} to ${daysOffset + chunkSize}...`);
+        console.log(`Generating prompt for days ${daysOffset + 1} to ${daysOffset + 2}...`);
   
         const response = await retryRequest(() =>
           axios.post(
@@ -56,13 +51,11 @@ connectDB()
                 { role: "system", content: systemPrompt },
                 { role: "user", content: prompt },
               ],
-              max_tokens: 8192,
-              temperature: 0.5,
+              max_tokens: 5000,
+              temperature: 0.4,
             },
             {
-              headers: {
-                Authorization: `Bearer ${process.env.OPENAI_API_KEY}`,
-              },
+              headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
             }
           )
         );
@@ -83,15 +76,21 @@ connectDB()
       await dietPlan.save();
       console.log("Diet plan saved successfully.");
   
-      // console.log("Generating PDF...");
-      // const pdfFilePath = await generateDietPlanPDF(dietPlan, { fullName: user.fullName });
-  
-      // console.log(`Sending email to ${email}...`);
-      // const htmlContent = generateEmailContent(dietPlan, { fullName: user.fullName });
-  
-      // await sendDietPlanEmail(email, "Your Customized Diet Plan", htmlContent, pdfFilePath);
-  
-      // console.log("Email sent successfully.");
+      console.log("Generating PDF...");
+      const pdfBuffer = await generateDietPlanPDF(dietPlan);
+      
+      if (!pdfBuffer || pdfBuffer.length === 0) {
+        throw new Error("PDF generation failed: Buffer is empty");
+      }
+      
+      console.log(`PDF buffer size: ${pdfBuffer.length} bytes`);
+      
+      console.log(`Sending email to ${email}...`);
+      const htmlContent = generateEmailContent();
+      
+      await sendDietPlanEmail(email, "Your Customized Diet Plan", htmlContent, pdfBuffer);
+      
+      console.log("Email sent successfully.");
       done(null, { success: true });
     } catch (error) {
       console.error("Job processing failed:", error.message);

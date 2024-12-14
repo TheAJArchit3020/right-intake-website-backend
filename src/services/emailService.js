@@ -17,8 +17,9 @@ const transporter = nodemailer.createTransport({
       html: htmlContent,
       attachments: [
         {
-          filename: pdfFileName, // Use a default name or allow passing a custom one
-          content: pdfBuffer, // Attach the buffer directly
+          filename: pdfFileName, 
+          content: pdfBuffer, 
+          contentType: "application/pdf",
         },
       ],
     };
