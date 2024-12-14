@@ -2,19 +2,15 @@ const puppeteer = require("puppeteer");
 const path = require("path");
 const fs = require("fs");
 
-const mockUser = {
-  fullName: "John Doe",
-  primaryGoal: "Weight loss",
-};
-
 const generateDietPlanPDF = async (dietPlan) => {
-  const browser = await puppeteer.launch();
-  const day = dietPlan.days[0];
+  const browser = await puppeteer.launch({
+    headless: true,
+    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+  });
 
   const logoPath = path.resolve(__dirname, "rightIntakeLogo.png");
   const logoBase64 = fs.readFileSync(logoPath, "base64");
-
-  const generateHTML = () => `
+  const generateHTML = (day, dayNumber, isFirstPage) => `
   <!DOCTYPE html>
   <html lang="en">
   <head>
@@ -27,30 +23,33 @@ const generateDietPlanPDF = async (dietPlan) => {
         margin: 0;
         padding: 15px;
         line-height: 1.4;
+        position: relative;
       }
-      .header {
-        text-align: center;
-        margin-bottom: 15px;
-      }
-      .logo {
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-      }
-      .logo img {
-        max-width: 35px;
-      }
-      .title {
-        font-size: 20px;
-        font-weight: bold;
-        margin-top: 5px;
-      }
-      .quote {
-        font-family: 'Dancing Script', cursive;
-        font-size: 14px;
-        margin-top: 3px;
-        color: #555;
-      }
+      ${isFirstPage ? `
+        .header {
+          text-align: center;
+          margin-bottom: 15px;
+        }
+        .logo {
+          display: inline-flex;
+          align-items: center;
+          gap: 8px;
+        }
+        .logo img {
+          max-width: 35px;
+        }
+        .title {
+          font-size: 20px;
+          font-weight: bold;
+          margin-top: 5px;
+        }
+        .quote {
+          font-family: 'Dancing Script', cursive;
+          font-size: 14px;
+          margin-top: 3px;
+          color: #555;
+        }
+      ` : ''}
       h1 {
         font-size: 20px;
         font-weight: bold;
@@ -77,11 +76,6 @@ const generateDietPlanPDF = async (dietPlan) => {
       .meal-summary div {
         font-size: 14px;
         margin-bottom: 5px;
-      }
-      .meal-summary div:first-child {
-        display: flex;
-        flex-direction: column;
-        gap: 5px;
       }
       .meal-summary strong {
         font-weight: bold;
@@ -118,14 +112,18 @@ const generateDietPlanPDF = async (dietPlan) => {
         color: #555;
       }
       .footer {
+        position: fixed;
+        bottom: 0;
+        left: 0;
+        width: 100%;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        margin-top: 20px;
         padding: 5px 15px;
         font-size: 10px;
         color: #555;
         border-top: 1px solid #ddd;
+        background: #fff;
       }
       .footer-left {
         display: flex;
@@ -147,59 +145,42 @@ const generateDietPlanPDF = async (dietPlan) => {
     <title>Diet Plan</title>
   </head>
   <body>
-    <!-- Header Section -->
-    <div class="header">
-      <div class="logo">
-        <img src="data:image/png;base64,${logoBase64}" alt="Right Intake Logo">
-        <span>Right intake</span>
+    ${isFirstPage ? `
+      <div class="header">
+        <div class="logo">
+          <img src="data:image/png;base64,${logoBase64}" alt="Right Intake Logo">
+          <span>Right intake</span>
+        </div>
+        <div class="title">Your 30-Day Personalized Diet and Workout Plan</div>
+        <div class="quote">"Healthy Eating Starts Here!"</div>
       </div>
-      <div class="title">Your 30-Day Personalized Diet and Workout Plan</div>
-      <div class="quote">"Healthy Eating Starts Here!"</div>
-    </div>
-    
-    <h1>Day ${day.day}/30</h1>
-    
-    ${["breakfast", "lunch", "snacks", "dinner"].map(mealType => {
-      const meal = day.meals[mealType];
-      const mealTitle = {
-        breakfast: "Breakfast Boost",
-        lunch: "Lunchtime Delight",
-        snacks: "Power Snack",
-        dinner: "Twilight Meal",
-      }[mealType];
-
-      return `
-        <div class="meal-section">
-          <div class="meal-details">
-            <strong>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</strong>
-            <ul>
-              ${meal.items.map(item => `
-                <li>${item.name} (${item.quantity}): ${item.calories} kcal</li>
-              `).join("")}
-            </ul>
+    ` : ""}
+    <h1>Day ${dayNumber}/30</h1>
+    ${Object.entries(day.meals).map(([mealType, meal]) => `
+      <div class="meal-section">
+        <div class="meal-details">
+          <strong>${mealType.charAt(0).toUpperCase() + mealType.slice(1)}</strong>
+          <ul>
+            ${meal.items.map(item => `
+              <li>${item.name} (${item.quantity}): ${item.calories ?? "N/A"} kcal</li>
+            `).join("")}
+          </ul>
+        </div>
+        <div class="meal-summary">
+          <div>
+            <strong>Total calories</strong>: ${meal.totalCalories ?? "N/A"} kcal
           </div>
-          <div class="meal-summary">
-            <div>
-              <strong>Total calories of ${mealTitle}</strong>
-              <span>${meal.totalCalories} kcal</span>
-            </div>
-            <div class="macros">
-              <strong>Macros</strong>: Protein ${meal.items.reduce((sum, item) => sum + item.macronutrients.protein, 0)}g, 
-              Carbs ${meal.items.reduce((sum, item) => sum + item.macronutrients.carbs, 0)}g, 
-              Fats ${meal.items.reduce((sum, item) => sum + item.macronutrients.fats, 0)}g
-            </div>
+          <div>
+            <strong>Macros</strong>: Protein ${meal.items.reduce((sum, item) => sum + (item.macronutrients?.protein || 0), 0)}g, 
+            Carbs ${meal.items.reduce((sum, item) => sum + (item.macronutrients?.carbs || 0), 0)}g, 
+            Fats ${meal.items.reduce((sum, item) => sum + (item.macronutrients?.fats || 0), 0)}g
           </div>
         </div>
-      `;
-    }).join("")}
-    
+      </div>
+    `).join("")}
     <div class="highlight">
-      Today's Tip: "Take a 10-15 minute walk after lunch – it aids digestion, boosts energy, and keeps you refreshed for the rest of the day."
+      Total calories of day ${dayNumber}: ${day.totalDayCalories ?? "N/A"} kcal
     </div>
-    <div class="highlight">
-      Total calories of day ${day.day}: ${day.totalDayCalories} kcal
-    </div>
-    
     <div class="workout-section">
       <h2>Workout for today</h2>
       <table class="workout-table">
@@ -221,16 +202,9 @@ const generateDietPlanPDF = async (dietPlan) => {
         </tbody>
       </table>
     </div>
-    
     <div class="tips">
-      “Make sure to take rest time of 2 to 4 mins in between each workout”<br>
-      “Do cardio for 40 mins as a post workout session for effective calorie burn”
-    </div>
-    <div class="congratulations" style="text-align: center; font-size: 16px; font-weight: bold; margin: 20px 0;">
-      Congratulations on Completing Your 30-Days Plan
-    </div>
-    
-    <!-- Footer Section -->
+    ${day.tip ? `<strong>Tip of the Day:</strong> "${day.tip}"` : ""}
+  </div>
     <div class="footer">
       <div class="footer-left">
         <img src="data:image/png;base64,${logoBase64}" alt="Right Intake Logo">
@@ -245,19 +219,22 @@ const generateDietPlanPDF = async (dietPlan) => {
 `;
 
 
-
   try {
     const page = await browser.newPage();
-    await page.setContent(generateHTML(), { waitUntil: "networkidle0" });
 
-    const pdfPath = path.resolve(__dirname, "Day1-DietPlan.pdf");
-    await page.pdf({
-      path: pdfPath,
+    const pagesContent = dietPlan.days.map((day, index) =>
+      generateHTML(day, index + 1, index === 0)
+    ).join('<div style="page-break-after: always;"></div>');
+
+    await page.setContent(pagesContent, { waitUntil: "networkidle0", timeout: 60000 });
+
+    const pdfBuffer = await page.pdf({
       format: "A4",
       printBackground: true,
     });
 
-    console.log(`PDF successfully saved to ${pdfPath}`);
+    console.log("PDF generated in-memory");
+    return pdfBuffer; 
   } catch (err) {
     console.error("Error generating PDF:", err);
   } finally {
@@ -265,49 +242,4 @@ const generateDietPlanPDF = async (dietPlan) => {
   }
 };
 
-const sampleJSON = {
-  days: [
-    {
-      day: 1,
-      meals: {
-        breakfast: {
-          items: [
-            { name: "Oatmeal", quantity: "1 cup", calories: 150, macronutrients: { protein: 5, carbs: 27, fats: 3 } },
-            { name: "Spinach Smoothie", quantity: "1 cup", calories: 50, macronutrients: { protein: 2, carbs: 10, fats: 0 } },
-          ],
-          totalCalories: 200,
-        },
-        lunch: {
-          items: [
-            { name: "Bhindi Sabzi", quantity: "1 cup", calories: 100, macronutrients: { protein: 3, carbs: 20, fats: 4 } },
-            { name: "Chapati", quantity: "1 medium", calories: 100, macronutrients: { protein: 3, carbs: 20, fats: 2 } },
-          ],
-          totalCalories: 200,
-        },
-        snacks: {
-          items: [
-            { name: "Carrot Sticks", quantity: "1 medium", calories: 25, macronutrients: { protein: 1, carbs: 6, fats: 0 } },
-            { name: "Cucumber Slices", quantity: "1 medium", calories: 16, macronutrients: { protein: 1, carbs: 4, fats: 0 } },
-          ],
-          totalCalories: 41,
-        },
-        dinner: {
-          items: [
-            { name: "Cauliflower Rice", quantity: "1 cup", calories: 25, macronutrients: { protein: 2, carbs: 5, fats: 0 } },
-            { name: "Brinjal Curry", quantity: "1 cup", calories: 120, macronutrients: { protein: 3, carbs: 18, fats: 6 } },
-          ],
-          totalCalories: 145,
-        },
-      },
-      workout: [
-        { name: "Bodyweight Squats", sets: 3, reps: "15" },
-        { name: "Push-ups", sets: 3, reps: "10" },
-        { name: "Plank", sets: 3, reps: "30 seconds" },
-      ],
-      totalDayCalories: 586,
-    },
-  ],
-};
-
-// Generate PDF
-generateDietPlanPDF(sampleJSON);
+module.exports = { generateDietPlanPDF };

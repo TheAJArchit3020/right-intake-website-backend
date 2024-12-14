@@ -8,68 +8,83 @@ const generateDietPlanPrompt = (user, daysOffset) => {
         .join("; ")
     : "None";
 
+  const includeTip = user.primaryGoal === "weight loss" || user.primaryGoal === "get shredded";
+
   return `Create a detailed, customized diet and workout plan for days ${
     daysOffset + 1
-  } to ${daysOffset + 10} for a user based on the following details:
-      - Full Name: ${user.fullName}
-      - Age: ${user.age} years
-      - Gender: ${user.gender}
-      - Height: ${user.height} cm
-      - Weight: ${user.weight} kg
-      - Body Fat Percentage: ${user.bodyFatPercentage || "Not specified"}
-      - Activity Level: ${user.activityLevel || "Not specified"}
-      - Known Health Conditions: ${
-        user.healthConditions.length ? user.healthConditions.join(", ") : "None"
-      }
-      - Allergies: ${user.allergies || "None"}
-      - Location: ${user.city}, ${user.state}, ${user.country}
-      - Diet Type: ${user.dietType}
-      - Non-Veg Days: ${nonVegDays}
-      - Selected Food Preferences: ${foodPreferences}
-      - Frequency of Meals: ${user.mealFrequency || "3"} per day
-      - Primary Goal: ${user.primaryGoal}
-      - Target Weight: ${user.targetWeight || "Not specified"} kg
-      - Average Sleep Hours: ${user.sleepHours || "Not specified"} hours per night
-      - Daily Water Intake: ${user.waterIntake || "Not specified"} liters
-      - Cheat Meals: ${cheatMeals}
-      - Workout Preference: ${user.workoutPreference}
-      - Home Workout Equipment: ${workoutEquipment}
-      - Weekly Training Days: ${user.weeklyTrainingDays}
+  } to ${daysOffset + 2} for a user based on the following details:
+        - Full Name: ${user.fullName}
+        - Age: ${user.age} years
+        - Gender: ${user.gender}
+        - Height: ${user.height} cm
+        - Weight: ${user.weight} kg
+        - Body Fat Percentage: ${user.bodyFatPercentage || "Not specified"}
+        - Activity Level: ${user.activityLevel || "Not specified"}
+        - Known Health Conditions: ${
+          user.healthConditions.length ? user.healthConditions.join(", ") : "None"
+        }
+        - Allergies: ${user.allergies || "None"}
+        - Location: ${user.city}, ${user.state}, ${user.country}
+        - Diet Type: ${user.dietType}
+        - Non-Veg Days: ${nonVegDays}
+        - Selected Food Preferences: ${foodPreferences}
+        - Frequency of Meals: ${user.mealFrequency || "3"} per day
+        - Primary Goal: ${user.primaryGoal}
+        - Target Weight: ${user.targetWeight || "Not specified"} kg
+        - Average Sleep Hours: ${user.sleepHours || "Not specified"} hours per night
+        - Daily Water Intake: ${user.waterIntake || "Not specified"} liters
+        - Cheat Meals: ${cheatMeals}
+        - Workout Preference: ${user.workoutPreference}
+        - Home Workout Equipment: ${workoutEquipment}
+        - Weekly Training Days: ${user.weeklyTrainingDays}
 
-      Each day must include:
-      - A detailed diet plan with breakfast, lunch, snacks, and dinner. Each meal should include:
-          - Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
-          - Total calories for the meal
-      - Total calories for the day
-      - A workout plan including a list of exercises with:
-          - Exercise name
-          - Sets
-          - Reps, or duration in seconds if the exercise requires holding a position (e.g., Plank or Wall Sit)
+        Each day must include:
+        - **Meals**: Breakfast, lunch, snacks, and dinner (all meals are mandatory). 
+          If a meal is skipped or not required, explicitly include it with an empty "items" array and "totalCalories" set to 0.
+        - A detailed diet plan with the following meals:
+            - **Breakfast**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
+            - **Lunch**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
+            - **Snacks**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
+            - **Dinner**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
+            - Total calories for each meal
+        - **Total calories for the day as totalDayCalories**
+        - A workout plan including:
+            - Exercise name
+            - Sets
+            - Reps, or duration in seconds if the exercise requires holding a position (e.g., Plank or Wall Sit)
+        - ${
+          includeTip
+            ? "**Tip of the Day**: Include one motivational or fitness tip in a single sentence (e.g., 'Drink plenty of water to stay hydrated and improve performance.')."
+            : ""
+        }
 
-      Ensure the response is valid JSON and does not include any comments, placeholders, or unnecessary text. Return the JSON wrapped in ***:: and ::***, like this:
+        Ensure the response is valid JSON and does not include any comments, placeholders, or unnecessary text. Return the JSON wrapped in ***:: and ::***, using the following schema:
 
-      ***:: {
-          "days": [
-              {
-                  "day": 1,
-                  "meals": {
-                      "breakfast": {
-                          "items": [
-                              { "name": "Oatmeal", "quantity": "1 cup", "calories": 150, "macronutrients": { "protein": 5, "carbs": 27, "fats": 3 } },
-                              { "name": "Banana", "quantity": "1 medium", "calories": 105, "macronutrients": { "protein": 1, "carbs": 27, "fats": 0 } }
-                          ],
-                          "totalCalories": 255
-                      },
-                      ...
-                  },
-                  "workout": [
-                      { "name": "Push-ups", "sets": 3, "reps": 12 },
-                      { "name": "Plank", "sets": 3, "reps": "30 seconds" }
-                  ]
-              }
-          ]
-      } ::***`;
+        ***:: {
+            "days": [
+                {
+                    "day": 1,
+                    "meals": {
+                        "breakfast": { "items": [], "totalCalories": 0 },
+                        "lunch": { "items": [], "totalCalories": 0 },
+                        "snacks": { "items": [], "totalCalories": 0 },
+                        "dinner": { "items": [], "totalCalories": 0 }
+                    },
+                    "totalDayCalories": 0,
+                    "workout": [
+                        { "name": "", "sets": 0, "reps": "" }
+                    ],
+                    ${
+                      includeTip
+                        ? `"tip": "Include a motivational or actionable fitness tip for the day in one sentence."`
+                        : ""
+                    }
+                }
+            ]
+        } ::***`;
 };
+
+
 
 
 

@@ -37,6 +37,7 @@ const DietPlanSchema = new mongoose.Schema({
         { name: String, sets: Number, reps: String },
       ],
       totalDayCalories: Number,
+      tip: { type: String, default: "" },
     },
   ],
 });
