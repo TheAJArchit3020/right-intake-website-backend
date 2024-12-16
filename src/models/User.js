@@ -62,7 +62,7 @@ const userSchema = new mongoose.Schema({
 
   // Fitness Goals
   primaryGoal: { type: String, required: true },
-  targetWeight: { type: Number },
+  targetWeight: { type: String },
 
   // Current Routine
   sleepHours: { type: String }, // string
