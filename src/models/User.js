@@ -3,10 +3,10 @@ const mongoose = require("mongoose");
 const userSchema = new mongoose.Schema({
   // Basic Identification
   fullName: { type: String, required: true },
-  email: { type: String, required: true, unique: true },
+  email: { type: String, required: true },
   gender: { type: String, enum: ["Male", "Female"], required: true },
   age: { type: Number, required: true },
-  mobileNumber: { type: String, unique: true, required: true }, // used as the ID
+  mobileNumber: { type: String, required: true }, // used as the ID
 
   // Physical Attributes
   height: { type: String, required: true }, //change to string
