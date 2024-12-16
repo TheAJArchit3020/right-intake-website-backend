@@ -23,7 +23,7 @@ const userSchema = new mongoose.Schema({
     type: String,
     required: true,
   },
-  homeWorkoutEquipment: { type: String, default: "" },
+  homeWorkoutEquipment: { type: [String], default: [] },
   weeklyTrainingDays: {
     type: String,
     required: true,
