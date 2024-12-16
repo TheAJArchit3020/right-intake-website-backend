@@ -53,6 +53,11 @@ const userSchema = new mongoose.Schema({
     default: {},
   },
 
+  fitnessLevel: {
+    type: String,
+    default: "",
+  },
+
   occupation: { type: String, required: true },
 
   // Fitness Goals

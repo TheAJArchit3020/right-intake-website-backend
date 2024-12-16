@@ -38,7 +38,7 @@ dietPlanQueue.process(async (job, done) => {
     const email = user.email;
     console.log(`Generating diet plan for userId: ${userId}, email: ${email}`);
 
-    const totalDays = 4;
+    const totalDays = 2;
     const dietPlanChunks = [];
 
     const startDate = new Date();
