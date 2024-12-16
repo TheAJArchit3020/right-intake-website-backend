@@ -17,4 +17,6 @@ dietPlanQueue.on("failed", (job, err) => {
     err.message
   );
 });
+
+console.log("Redis Queue connected for dietPlanQueue"); 
 module.exports = dietPlanQueue;
