@@ -21,18 +21,11 @@ const userSchema = new mongoose.Schema({
   },
   workoutPreference: {
     type: String,
-    enum: ["gym", "home workout", "outdoors"],
     required: true,
   },
   homeWorkoutEquipment: { type: String, default: "" },
   weeklyTrainingDays: {
     type: String,
-    enum: [
-      "I haven't trained before",
-      "2-3 days a week",
-      "4-5 days a week",
-      "6 days a week",
-    ],
     required: true,
   },
 
@@ -47,7 +40,6 @@ const userSchema = new mongoose.Schema({
   // Dietary Preferences
   dietType: {
     type: String,
-    enum: ["veg", "non-veg"],
     required: true, 
   },
 
@@ -55,15 +47,11 @@ const userSchema = new mongoose.Schema({
     type: [String], 
     default: [],
   },
-  foodPreferences: {
-    type: [
-      {
-        category: { type: String, required: true },
-        items: { type: [String], default: [] }, // String array
-      },
-    ],
-    default: [],
-  }, //object {category, names}
+  foodPreference: {
+    type: Map,
+    of: [String],
+    default: {},
+  },
 
   occupation: { type: String, required: true },
 
