@@ -2,9 +2,13 @@ const generateDietPlanPrompt = (user, daysOffset) => {
   const cheatMeals = user.cheatMeals.length ? user.cheatMeals.join(", ") : "None";
   const nonVegDays = user.nonVegDays.length ? user.nonVegDays.join(", ") : "None";
   const workoutEquipment = user.homeWorkoutEquipment || "No equipment";
-  const foodPreferences = user.foodPreferences.length
-    ? user.foodPreferences
-        .map((pref) => `${pref.category}: ${pref.items.join(", ")}`)
+  const foodPreferences =
+  user.foodPreference && typeof user.foodPreference === "object"
+    ? Object.entries(user.foodPreference)
+        .map(([category, items]) => {
+          const formattedItems = Array.isArray(items) ? items.join(", ") : "None";
+          return `${category}: ${formattedItems}`;
+        })
         .join("; ")
     : "None";
 
@@ -20,6 +24,7 @@ const generateDietPlanPrompt = (user, daysOffset) => {
         - Weight: ${user.weight} kg
         - Body Fat Percentage: ${user.bodyFatPercentage || "Not specified"}
         - Activity Level: ${user.activityLevel || "Not specified"}
+        - Fitness Level: ${user.fitnessLevel || "Not specified"}
         - Known Health Conditions: ${
           user.healthConditions.length ? user.healthConditions.join(", ") : "None"
         }
@@ -97,6 +102,7 @@ const generateSystemPrompt = () => {
   - Gender: Their gender (e.g., Male, Female).
   - Height: User's height in cm (e.g., 175).
   - Weight: User's weight in kg (e.g., 70).
+  - Fitness Level: Beginner, intermediate, or advanced.
   - Body Fat Percentage: User's body fat percentage (optional).
   - Activity Level: Sedentary, lightly active, moderately active, very active, or super active.
   - Known Health Conditions: E.g., diabetes, hypertension.
