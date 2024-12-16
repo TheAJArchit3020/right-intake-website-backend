@@ -7,4 +7,14 @@ const dietPlanQueue = new Bull("dietPlanQueue", {
   },
 });
 
+dietPlanQueue.on("error", (error) => {
+  console.error("Diet Plan Queue Redis Error:", error.message);
+});
+
+dietPlanQueue.on("failed", (job, err) => {
+  console.error(
+    `Job failed for userId: ${job.data.userId}, email: ${job.data.email}. Error:`,
+    err.message
+  );
+});
 module.exports = dietPlanQueue;
