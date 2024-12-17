@@ -2,22 +2,62 @@
     {
       "id": "ice-cream",
       "name": "Ice Cream",
-      "imageUrl": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc"
+      "imageUrl": "https://images.pexels.com/photos/1343504/pexels-photo-1343504.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     },
     {
       "id": "burger",
       "name": "Burger",
-      "imageUrl": "https://images.unsplash.com/photo-1550547660-d9450f859349"
+      "imageUrl": "https://images.pexels.com/photos/1251198/pexels-photo-1251198.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "pasta",
+      "name": "Pasta",
+      "imageUrl": "https://images.pexels.com/photos/1437267/pexels-photo-1437267.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "waffle",
+      "name": "Waffle",
+      "imageUrl": "https://images.pexels.com/photos/789327/pexels-photo-789327.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "biriyani",
+      "name": "Biriyani",
+      "imageUrl": "https://images.unsplash.com/photo-1708184528306-f75a0a5118ee?q=80&w=2910&auto=format&fit=crop&ixlib=rb-4.0.3&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D"
+    },
+    {
+      "id": "fried-chicken",
+      "name": "Fried Chicken",
+      "imageUrl": "https://images.pexels.com/photos/1352270/pexels-photo-1352270.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     },
     {
       "id": "pizza",
       "name": "Pizza",
-      "imageUrl": "https://images.unsplash.com/photo-1548365328-5c8f62d0a18f"
+      "imageUrl": "https://images.pexels.com/photos/1566837/pexels-photo-1566837.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     },
     {
-      "id": "coke",
-      "name": "Coke",
-      "imageUrl": "https://images.unsplash.com/photo-1548365328-5c8f62d0a18f"
+      "id": "parotta",
+      "name": "Parotta",
+      "imageUrl": "https://images.pexels.com/photos/9609857/pexels-photo-9609857.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "donuts",
+      "name": "Donuts",
+      "imageUrl": "https://images.pexels.com/photos/1591180/pexels-photo-1591180.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "cake",
+      "name": "Cake",
+      "imageUrl": "https://images.pexels.com/photos/140831/pexels-photo-140831.jpeg?auto=compress&cs=tinysrgb&w=1200"
+    },
+    {
+      "id": "cookies",
+      "name": "Cookies",
+      "imageUrl": "https://images.pexels.com/photos/301972/pexels-photo-301972.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
+    },
+    {
+      "id": "milkshake",
+      "name": "Milk Shake",
+      "imageUrl": "https://images.pexels.com/photos/103566/pexels-photo-103566.jpeg?auto=compress&cs=tinysrgb&w=1260&h=750&dpr=2"
     }
   ]
   
