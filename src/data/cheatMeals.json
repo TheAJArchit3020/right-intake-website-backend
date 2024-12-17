@@ -1,0 +1,23 @@
+[
+    {
+      "id": "ice-cream",
+      "name": "Ice Cream",
+      "imageUrl": "https://images.unsplash.com/photo-1589301760014-d929f3979dbc"
+    },
+    {
+      "id": "burger",
+      "name": "Burger",
+      "imageUrl": "https://images.unsplash.com/photo-1550547660-d9450f859349"
+    },
+    {
+      "id": "pizza",
+      "name": "Pizza",
+      "imageUrl": "https://images.unsplash.com/photo-1548365328-5c8f62d0a18f"
+    },
+    {
+      "id": "coke",
+      "name": "Coke",
+      "imageUrl": "https://images.unsplash.com/photo-1548365328-5c8f62d0a18f"
+    }
+  ]
+  
