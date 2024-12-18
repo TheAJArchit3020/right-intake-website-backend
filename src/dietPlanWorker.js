@@ -62,7 +62,7 @@ dietPlanQueue.process(async (job, done) => {
               { role: "system", content: systemPrompt },
               { role: "user", content: prompt },
             ],
-            max_tokens: 5000,
+            max_tokens: 6700,
             temperature: 0.4,
           },
           {
