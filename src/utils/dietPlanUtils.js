@@ -1,22 +1,23 @@
-const generateDietPlanPrompt = (user, daysOffset) => {
+const generateDietPlanPrompt = (user, daysOffset, mealTypes) => {
+  const [day1MealType, day2MealType] = mealTypes;
+
   const cheatMeals = user.cheatMeals.length ? user.cheatMeals.join(", ") : "None";
-  const nonVegDays = user.nonVegDays.length ? user.nonVegDays.join(", ") : "None";
   const workoutEquipment = user.homeWorkoutEquipment || "No equipment";
   const foodPreferences =
-  user.foodPreference && typeof user.foodPreference === "object"
-    ? Object.entries(user.foodPreference)
-        .map(([category, items]) => {
-          const formattedItems = Array.isArray(items) ? items.join(", ") : "None";
-          return `${category}: ${formattedItems}`;
-        })
-        .join("; ")
-    : "None";
+    user.foodPreference && typeof user.foodPreference === "object"
+      ? Object.entries(user.foodPreference)
+          .map(([category, items]) => {
+            const formattedItems = Array.isArray(items) ? items.join(", ") : "None";
+            return `${category}: ${formattedItems}`;
+          })
+          .join("; ")
+      : "None";
 
   const includeTip = user.primaryGoal === "weight loss" || user.primaryGoal === "get shredded";
 
   return `Create a detailed, customized diet and workout plan for days ${
     daysOffset + 1
-  } to ${daysOffset + 2} for a user based on the following details:
+  } and ${daysOffset + 2} based on the following details:
         - Full Name: ${user.fullName}
         - Age: ${user.age} years
         - Gender: ${user.gender}
@@ -31,14 +32,15 @@ const generateDietPlanPrompt = (user, daysOffset) => {
         - Allergies: ${user.allergies || "None"}
         - Location: ${user.city}, ${user.state}, ${user.country}
         - Diet Type: ${user.dietType}
-        - Non-Veg Days: ${nonVegDays}
+        - Meal Type for Day ${daysOffset + 1}: ${day1MealType}
+        - Meal Type for Day ${daysOffset + 2}: ${day2MealType}
         - Selected Food Preferences: ${foodPreferences}
         - Frequency of Meals: ${user.mealFrequency || "3"} per day
         - Primary Goal: ${user.primaryGoal}
         - Target Weight: ${user.targetWeight || "Not specified"} kg
         - Average Sleep Hours: ${user.sleepHours || "Not specified"} hours per night
         - Daily Water Intake: ${user.waterIntake || "Not specified"} liters
-        - Cheat Meals: ${cheatMeals}
+        - Cheat Meals: ${cheatMeals} (strictly include the cheat meal only once during the entire 30-day plan, on a suitable day).
         - Workout Preference: ${user.workoutPreference}
         - Home Workout Equipment: ${workoutEquipment}
         - Weekly Training Days: ${user.weeklyTrainingDays}
@@ -46,6 +48,7 @@ const generateDietPlanPrompt = (user, daysOffset) => {
         Each day must include:
         - **Meals**: Breakfast, lunch, snacks, and dinner (all meals are mandatory). 
           If a meal is skipped or not required, explicitly include it with an empty "items" array and "totalCalories" set to 0.
+          - Ensure the cheat meal (${cheatMeals}) is included only once for the entire 30-day plan and not more than that.
         - A detailed diet plan with the following meals:
             - **Breakfast**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
             - **Lunch**: Food items (name, quantity, calories, and macronutrients: protein, carbs, fats)
@@ -54,6 +57,7 @@ const generateDietPlanPrompt = (user, daysOffset) => {
             - Total calories for each meal
         - **Total calories for the day as totalDayCalories**
         - A workout plan including:
+            - Progressive intensity (increasing difficulty each week).
             - Exercise name
             - Sets
             - Reps, or duration in seconds if the exercise requires holding a position (e.g., Plank or Wall Sit)
@@ -63,32 +67,50 @@ const generateDietPlanPrompt = (user, daysOffset) => {
             : ""
         }
 
-        Ensure the response is valid JSON and does not include any comments, placeholders, or unnecessary text. Return the JSON wrapped in ***:: and ::***, using the following schema:
+        Ensure the response is valid JSON wrapped in ***:: and ::***. 
+        Use the following schema:
 
         ***:: {
-            "days": [
-                {
-                    "day": 1,
-                    "meals": {
-                        "breakfast": { "items": [], "totalCalories": 0 },
-                        "lunch": { "items": [], "totalCalories": 0 },
-                        "snacks": { "items": [], "totalCalories": 0 },
-                        "dinner": { "items": [], "totalCalories": 0 }
-                    },
-                    "totalDayCalories": 0,
-                    "workout": [
-                        { "name": "", "sets": 0, "reps": "" }
-                    ],
-                    ${
-                      includeTip
-                        ? `"tip": "Include a motivational or actionable fitness tip for the day in one sentence."`
-                        : ""
-                    }
-                }
-            ]
+          "days": [
+              {
+                  "day": ${daysOffset + 1},
+                  "meals": {
+                      "breakfast": { "items": [], "totalCalories": 0 },
+                      "lunch": { "items": [], "totalCalories": 0 },
+                      "snacks": { "items": [], "totalCalories": 0 },
+                      "dinner": { "items": [], "totalCalories": 0 }
+                  },
+                  "totalDayCalories": 0,
+                  "workout": [
+                      { "name": "", "sets": 0, "reps": "" }
+                  ]${
+                    includeTip
+                      ? `,
+                  "tip": "Include a motivational or actionable fitness tip for the day in one sentence."`
+                      : ""
+                  }
+              },
+              {
+                  "day": ${daysOffset + 2},
+                  "meals": {
+                      "breakfast": { "items": [], "totalCalories": 0 },
+                      "lunch": { "items": [], "totalCalories": 0 },
+                      "snacks": { "items": [], "totalCalories": 0 },
+                      "dinner": { "items": [], "totalCalories": 0 }
+                  },
+                  "totalDayCalories": 0,
+                  "workout": [
+                      { "name": "", "sets": 0, "reps": "" }
+                  ]${
+                    includeTip
+                      ? `,
+                  "tip": "Include a motivational or actionable fitness tip for the day in one sentence."`
+                      : ""
+                  }
+              }
+          ]
         } ::***`;
 };
-
 
 
 
@@ -145,14 +167,21 @@ const extractWrappedJSON = (responseText) => {
   const match = responseText.match(/\*\*\*::(.*?)::\*\*\*/s);
   if (match && match[1]) {
     try {
-      return JSON.parse(match[1].trim());
+      const parsedJSON = JSON.parse(match[1].trim());
+      if (!parsedJSON.days) {
+        console.error("Extracted JSON does not contain 'days':", parsedJSON);
+        throw new Error("Missing 'days' in extracted JSON");
+      }
+      return parsedJSON;
     } catch (error) {
       console.error("Invalid JSON in response:", match[1]);
       throw new Error("Failed to parse JSON");
     }
   }
-  throw new Error("Failed to extract JSON from response");
+  console.error("Failed to extract JSON from response:", responseText);
+  throw new Error("No JSON match found in response");
 };
+
   const retryRequest = async (requestFn, maxRetries = 3, delay = 1000) => {
     for (let attempt = 0; attempt <= maxRetries; attempt++) {
       try {
