@@ -2,46 +2,51 @@ const dietPlanQueue = require("../services/RedisandBullQueue");
 const User = require("../models/User");
 const crypto = require("crypto");
 const { createOrder } = require("../services/razorpayService");
-const {  generateFoodPreferencesPrompt, retryRequest} = require("../utils/foodPreferencesUtils");
+const {  generateFoodPreferencesPrompt, retryRequest, extractWrappedJSONForFoodPreferences} = require("../utils/foodPreferencesUtils");
 const axios = require("axios");
 const { extractWrappedJSON } = require("../utils/dietPlanUtils");
+const TemporaryUser = require("../models/TemporaryUser");
 
+require("dotenv").config();
 
-exports.saveUserData = async (req, res) => {
+exports.saveTemporaryUserData = async (req, res) => {
   const userData = req.body;
 
   try {
-    console.log("Saving user data...");
-    const user = new User(userData);
-    await user.save();
+    console.log("Saving temporary user data...");
+    const tempUser = new TemporaryUser(userData);
+    await tempUser.save();
 
-    res.status(200).json({ message: "User data saved successfully", userId: user._id });
+    res.status(200).json({ message: "Temporary user data saved successfully", tempUserId: tempUser._id });
   } catch (error) {
-    console.error("Error saving user data:", error.message);
-    res.status(500).json({ message: "Failed to save user data" });
+    console.error("Error saving temporary user data:", error.message);
+    res.status(500).json({ message: "Failed to save temporary user data" });
   }
 };
 
 
+
 exports.initiatePayment = async (req, res) => {
-  const { userId, amount } = req.body;
+  const { tempUserId, amount } = req.body;
 
   try {
-    if (!userId || !amount) {
-      return res.status(400).json({ message: "userId and amount are required" });
-    }
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    if (!tempUserId || !amount) {
+      return res.status(400).json({ message: "tempUserId and amount are required" });
     }
 
-    const email = user.email; 
-    console.log(`Initiating payment for userId: ${userId}, email: ${email}, amount: ${amount}`);
+    const tempUser = await TemporaryUser.findById(tempUserId);
+    if (!tempUser) {
+      return res.status(404).json({ message: "Temporary user not found" });
+    }
 
+    console.log(`Initiating payment for tempUserId: ${tempUserId}, email: ${tempUser.email}, amount: ${amount}`);
     const order = await createOrder(amount);
+    const razorpayKeyId = process.env.RAZORPAY_KEY_ID;
+
     res.status(200).json({
       message: "Payment initiated successfully",
       orderId: order.id,
+      razorpayKeyId,
     });
   } catch (error) {
     console.error("Error initiating payment:", error.message);
@@ -50,10 +55,10 @@ exports.initiatePayment = async (req, res) => {
 };
 
 exports.verifyPayment = async (req, res) => {
-  const { userId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
+  const { tempUserId, razorpay_order_id, razorpay_payment_id, razorpay_signature } = req.body;
 
   try {
-    if (!userId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
+    if (!tempUserId || !razorpay_order_id || !razorpay_payment_id || !razorpay_signature) {
       return res.status(400).json({ message: "Missing required fields" });
     }
 
@@ -65,25 +70,31 @@ exports.verifyPayment = async (req, res) => {
       return res.status(400).json({ message: "Invalid signature. Payment verification failed." });
     }
 
-    console.log(`Payment verified for order: ${razorpay_order_id}, payment: ${razorpay_payment_id}`);
-
-  
-    const user = await User.findById(userId);
-    if (!user) {
-      return res.status(404).json({ message: "User not found" });
+    const tempUser = await TemporaryUser.findById(tempUserId);
+    if (!tempUser) {
+      return res.status(404).json({ message: "Temporary user not found" });
     }
 
-    const email = user.email;
-    console.log(`Adding diet plan generation job to queue for userId: ${userId}, email: ${email}`);
+    if (tempUser.paymentStatus === "SUCCESS") {
+      return res.status(200).json({ message: "Payment already processed." });
+    }
 
-    await dietPlanQueue.add({ userId, email });
+    const user = new User(tempUser.toObject());
+    delete user._id; 
+    await user.save();
 
-    res.status(200).json({ message: "Payment verified and diet plan generation started." });
+    await TemporaryUser.deleteOne({ _id: tempUserId });
+
+    console.log(`Adding diet plan generation job to queue for userId: ${user._id}`);
+    await dietPlanQueue.add({ userId: user._id, email: user.email });
+
+    res.status(200).json({ message: "Payment verified, diet plan generation in progress" });
   } catch (error) {
     console.error("Error verifying payment:", error.message);
     res.status(500).json({ message: "Failed to verify payment" });
   }
 };
+
 
 exports.generateFoodPreferences = async (req, res) => {
   const { location } = req.body;
@@ -116,7 +127,7 @@ exports.generateFoodPreferences = async (req, res) => {
     );
 
     const rawResponse = response.data.choices[0].message.content;
-    const foodPreferences = extractWrappedJSON(rawResponse); 
+    const foodPreferences = extractWrappedJSONForFoodPreferences(rawResponse);
 
     res.status(200).json(foodPreferences);
   } catch (error) {
