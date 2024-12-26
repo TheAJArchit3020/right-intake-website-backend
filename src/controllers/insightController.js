@@ -1,8 +1,9 @@
 
-const { generateInsightsPrompt } = require("../utils/insightsUtils");
+const { generateInsightsPrompt, extractWrappedJSONForInsights } = require("../utils/insightsUtils");
 const { extractWrappedJSON, retryRequest } = require("../utils/dietPlanUtils");
 const User = require("../models/User");
 const axios = require("axios");
+const TemporaryUser = require("../models/TemporaryUser");
 
   exports.generateInsights = async (req, res) => {
     const { userId } = req.body;
@@ -13,7 +14,7 @@ const axios = require("axios");
       }
   
       console.log(`Fetching user data for insights generation (userId: ${userId})...`);
-      const user = await User.findById(userId);
+      const user = await TemporaryUser.findById(userId);
       if (!user) {
         return res.status(404).json({ message: "User not found" });
       }
@@ -45,7 +46,7 @@ const axios = require("axios");
       );
   
       const rawResponse = response.data.choices[0].message.content;
-      const insightsData = extractWrappedJSON(rawResponse);
+      const insightsData = extractWrappedJSONForInsights(rawResponse);
   
       console.log("Insights generated successfully:", insightsData);
       res.status(200).json(insightsData);

@@ -53,6 +53,32 @@ const generateInsightsPrompt = (user) => {
     `;
 };
 
+const extractWrappedJSONForInsights = (responseText) => {
+  const match = responseText.match(/\*\*\*::(.*?)::\*\*\*/s);
+
+  if (!match || !match[1]) {
+    throw new Error("Wrapped JSON not found in response");
+  }
+
+  const extractedJSON = match[1].trim();
+
+  try {
+    const parsedJSON = JSON.parse(extractedJSON);
+
+    // Validate that it's an object structure
+    if (typeof parsedJSON !== "object" || Array.isArray(parsedJSON)) {
+      console.error("Extracted JSON is not a valid object:", parsedJSON);
+      throw new Error("Unexpected JSON structure for insights.");
+    }
+
+    return parsedJSON;
+  } catch (error) {
+    console.error("Failed to parse JSON:", extractedJSON);
+    throw new Error("Invalid JSON format.");
+  }
+};
+
 module.exports = {
+  extractWrappedJSONForInsights,
   generateInsightsPrompt,
 };
