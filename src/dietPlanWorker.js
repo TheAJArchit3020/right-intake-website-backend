@@ -40,7 +40,7 @@ connectDB()
       const email = user.email;
       console.log(`Generating diet plan for userId: ${userId}, email: ${email}`);
   
-      const totalDays = 30; 
+      const totalDays = 30;
       const dietPlanChunks = [];
   
       const startDate = new Date();
@@ -50,49 +50,58 @@ connectDB()
       const systemPrompt = generateSystemPrompt();
   
       for (let daysOffset = 0; daysOffset < totalDays; daysOffset++) {
+        let success = false; 
         const day1Date = new Date(startDate);
         day1Date.setDate(startDate.getDate() + daysOffset);
-      
-        const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
-        const day1MealType = user.nonVegDays.includes(weekdays[day1Date.getDay()])
+  
+        const weekdaysFull = ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"];
+        const day1MealType = user.nonVegDays.includes(weekdaysFull[day1Date.getDay()])
           ? "Non-Veg"
           : "Veg";
-      
+  
         console.log(`Day meal type: ${day1MealType}`);
-      
+  
         const prompt = generateDietPlanPrompt(user, day1Date, day1MealType);
-      
+  
         console.log(`Generating prompt for Day ${day1Date.toDateString()}`);
-      
-        const response = await retryRequest(() =>
-          axios.post(
-            "https://api.openai.com/v1/chat/completions",
-            {
-              model: "gpt-4o-mini",
-              messages: [
-                { role: "system", content: systemPrompt },
-                { role: "user", content: prompt },
-              ],
-              max_tokens: 7700,
-              temperature: 0.3,
-            },
-            {
-              headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-            }
-          )
-        );
-      
-        const rawResponse = response.data.choices[0].message.content;
-        const chunk = extractWrappedJSON(rawResponse);
-      
-        const updatedDays = chunk.days.map((dayEntry, index) => ({
-          ...dayEntry,
-          day: new Date(day1Date.getTime() + index * 24 * 60 * 60 * 1000), 
-        }));
-      
-        dietPlanChunks.push(...updatedDays);
+  
+        while (!success) {
+          try {
+            const response = await retryRequest(() =>
+              axios.post(
+                "https://api.openai.com/v1/chat/completions",
+                {
+                  model: "gpt-4o-mini",
+                  messages: [
+                    { role: "system", content: systemPrompt },
+                    { role: "user", content: prompt },
+                  ],
+                  max_tokens: 2500,
+                  temperature: 0.5,
+                },
+                {
+                  headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+                }
+              )
+            );
+  
+            const rawResponse = response.data.choices[0].message.content;
+            const chunk = extractWrappedJSON(rawResponse);
+  
+            const updatedDays = chunk.days.map((dayEntry, index) => ({
+              ...dayEntry,
+              day: new Date(day1Date.getTime() + index * 24 * 60 * 60 * 1000),
+            }));
+  
+            dietPlanChunks.push(...updatedDays);
+            success = true; 
+          } catch (error) {
+            console.error(`Retry failed for Day ${day1Date.toDateString()}:`, error.message);
+            console.log("Retrying...");
+          }
+        }
       }
-      
+  
       const dietPlan = new DietPlan({
         userId,
         startDate,
@@ -113,19 +122,18 @@ connectDB()
   
       console.log(`Sending email to ${email}...`);
       const htmlContent = generateEmailContent();
-
+  
       await sendDietPlanEmail(
         email,
         "Your Customized Diet Plan",
         htmlContent,
         pdfBuffer
       );
-
+  
       console.log("Email sent successfully.");
       done(null, { success: true });
     } catch (error) {
       console.error(`Job failed for userId: ${job.data.userId}. Error:`, error.message);
-      done(error); 
+      done(error);
     }
   });
-  
