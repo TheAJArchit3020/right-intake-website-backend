@@ -49,26 +49,21 @@ connectDB()
   
       const systemPrompt = generateSystemPrompt();
   
-      for (let daysOffset = 0; daysOffset < totalDays; daysOffset += 2) {
+      for (let daysOffset = 0; daysOffset < totalDays; daysOffset++) {
         const day1Date = new Date(startDate);
         day1Date.setDate(startDate.getDate() + daysOffset);
-  
-        const day2Date = new Date(startDate);
-        day2Date.setDate(startDate.getDate() + daysOffset + 1);
-  
+      
         const weekdays = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
         const day1MealType = user.nonVegDays.includes(weekdays[day1Date.getDay()])
           ? "Non-Veg"
           : "Veg";
-        const day2MealType = user.nonVegDays.includes(weekdays[day2Date.getDay()])
-          ? "Non-Veg"
-          : "Veg";
-  
-  
-        const prompt = generateDietPlanPrompt(user, daysOffset, [day1MealType, day2MealType]);
-  
-        console.log(`Generating prompt for Days ${daysOffset + 1} and ${daysOffset + 2}...`);
-  
+      
+        console.log(`Day meal type: ${day1MealType}`);
+      
+        const prompt = generateDietPlanPrompt(user, day1Date, day1MealType);
+      
+        console.log(`Generating prompt for Day ${day1Date.toDateString()}`);
+      
         const response = await retryRequest(() =>
           axios.post(
             "https://api.openai.com/v1/chat/completions",
@@ -86,12 +81,18 @@ connectDB()
             }
           )
         );
-  
+      
         const rawResponse = response.data.choices[0].message.content;
         const chunk = extractWrappedJSON(rawResponse);
-        dietPlanChunks.push(...chunk.days);
+      
+        const updatedDays = chunk.days.map((dayEntry, index) => ({
+          ...dayEntry,
+          day: new Date(day1Date.getTime() + index * 24 * 60 * 60 * 1000), 
+        }));
+      
+        dietPlanChunks.push(...updatedDays);
       }
-  
+      
       const dietPlan = new DietPlan({
         userId,
         startDate,
