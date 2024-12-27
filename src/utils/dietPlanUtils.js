@@ -1,5 +1,5 @@
 const generateDietPlanPrompt = (user, daysOffset, mealTypes) => {
-  const [day1MealType, day2MealType] = mealTypes;
+  const day1MealType = mealTypes;
 
   const cheatMeals = user.cheatMeals.length ? user.cheatMeals.join(", ") : "None";
   const workoutEquipment = user.homeWorkoutEquipment || "No equipment";
@@ -15,9 +15,9 @@ const generateDietPlanPrompt = (user, daysOffset, mealTypes) => {
 
   const includeTip = user.primaryGoal === "weight loss" || user.primaryGoal === "get shredded";
 
-  return `Create a detailed, customized diet and workout plan for days ${
-    daysOffset + 1
-  } and ${daysOffset + 2} based on the following details:
+  return `Create a detailed, customized diet and workout plan for day ${
+    daysOffset
+  } based on the following details:
         - Full Name: ${user.fullName}
         - Age: ${user.age} years
         - Gender: ${user.gender}
@@ -32,8 +32,7 @@ const generateDietPlanPrompt = (user, daysOffset, mealTypes) => {
         - Allergies: ${user.allergies || "None"}
         - Location: ${user.city}, ${user.state}, ${user.country}
         - Diet Type: ${user.dietType}
-        - Meal Type for Day ${daysOffset + 1}: ${day1MealType}
-        - Meal Type for Day ${daysOffset + 2}: ${day2MealType}
+        - Meal Type for Day ${daysOffset}: ${day1MealType}
         - Selected Food Preferences: ${foodPreferences}
         - Frequency of Meals: ${user.mealFrequency || "3"} per day
         - Primary Goal: ${user.primaryGoal}
@@ -73,25 +72,7 @@ const generateDietPlanPrompt = (user, daysOffset, mealTypes) => {
         ***:: {
           "days": [
               {
-                  "day": ${daysOffset + 1},
-                  "meals": {
-                      "breakfast": { "items": [], "totalCalories": 0 },
-                      "lunch": { "items": [], "totalCalories": 0 },
-                      "snacks": { "items": [], "totalCalories": 0 },
-                      "dinner": { "items": [], "totalCalories": 0 }
-                  },
-                  "totalDayCalories": 0,
-                  "workout": [
-                      { "name": "", "sets": 0, "reps": "" }
-                  ]${
-                    includeTip
-                      ? `,
-                  "tip": "Include a motivational or actionable fitness tip for the day in one sentence."`
-                      : ""
-                  }
-              },
-              {
-                  "day": ${daysOffset + 2},
+                  "day": ${daysOffset},
                   "meals": {
                       "breakfast": { "items": [], "totalCalories": 0 },
                       "lunch": { "items": [], "totalCalories": 0 },
@@ -152,7 +133,7 @@ const generateSystemPrompt = () => {
   **Output Requirements**:
   For each day, provide:
   - **Meals**: Breakfast, lunch, snacks, and dinner, with:
-      - Food items (name, quantity, calories, macronutrients: protein, carbs, fats)
+      - Food items (name, quantity, calories, macronutrients: protein, carbs, fats) the food items should be more detailed and should include ingredients as text.
       - Total calories for each meal
   - **Workout**: A list of exercises, each including:
       - Exercise name (e.g., "Push-ups")
