@@ -15,7 +15,7 @@ const dietPlanQueue = require("./services/RedisandBullQueue");
 const pdfQueue = require("./services/pdfBullQueue");
 
 const CONCURRENCY = 20; // Number of concurrent jobs to process
-const DELAY_BETWEEN_BATCHES = 3000; // 3-second delay between batches
+const DELAY_BETWEEN_BATCHES = 3000; // Delay in milliseconds
 
 connectDB()
   .then(() => {
@@ -25,26 +25,18 @@ connectDB()
     console.error("Worker MongoDB connection error:", error);
   });
 
-let processingBatch = false;
-
 dietPlanQueue.process(CONCURRENCY, async (job, done) => {
   try {
-    if (processingBatch) {
-      console.log("Waiting for the current batch to finish...");
-      return;
-    }
-
-    processingBatch = true;
-
     console.log(`Processing diet plan job for userId: ${job.data.userId}`);
     const { userId } = job.data;
 
     if (!userId) throw new Error("Missing userId in job data");
 
+    // Fetch user data
     const user = await User.findById(userId);
     if (!user) throw new Error("User not found");
 
-    const totalDays = 1;
+    const totalDays = 1; // Total days for the diet plan
     const startDate = new Date();
     const endDate = new Date(startDate);
     endDate.setDate(startDate.getDate() + totalDays);
@@ -52,8 +44,8 @@ dietPlanQueue.process(CONCURRENCY, async (job, done) => {
     const dietPlanChunks = [];
     const systemPrompt = generateSystemPrompt();
 
+    // Generate diet plan
     for (let daysOffset = 0; daysOffset < totalDays; daysOffset++) {
-      let success = false;
       const day1Date = new Date(startDate);
       day1Date.setDate(startDate.getDate() + daysOffset);
 
@@ -72,51 +64,47 @@ dietPlanQueue.process(CONCURRENCY, async (job, done) => {
         ? "Non-Veg"
         : "Veg";
 
-      console.log(`Day meal type: ${day1MealType}`);
+      console.log(`Generating prompt for Day ${day1Date.toDateString()}`);
       const prompt = generateDietPlanPrompt(user, day1Date, day1MealType);
 
-      console.log(`Generating prompt for Day ${day1Date.toDateString()}`);
+      try {
+        const response = await retryRequest(() =>
+          axios.post(
+            "https://api.openai.com/v1/chat/completions",
+            {
+              model: "gpt-4o-mini",
+              messages: [
+                { role: "system", content: systemPrompt },
+                { role: "user", content: prompt },
+              ],
+              max_tokens: 2500,
+              temperature: 0.5,
+            },
+            {
+              headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
+            }
+          )
+        );
 
-      while (!success) {
-        try {
-          const response = await retryRequest(() =>
-            axios.post(
-              "https://api.openai.com/v1/chat/completions",
-              {
-                model: "gpt-4o-mini",
-                messages: [
-                  { role: "system", content: systemPrompt },
-                  { role: "user", content: prompt },
-                ],
-                max_tokens: 2500,
-                temperature: 0.5,
-              },
-              {
-                headers: { Authorization: `Bearer ${process.env.OPENAI_API_KEY}` },
-              }
-            )
-          );
+        const rawResponse = response.data.choices[0].message.content;
+        const chunk = extractWrappedJSON(rawResponse);
 
-          const rawResponse = response.data.choices[0].message.content;
-          const chunk = extractWrappedJSON(rawResponse);
+        const updatedDays = chunk.days.map((dayEntry, index) => ({
+          ...dayEntry,
+          day: index + 1,
+        }));
 
-          const updatedDays = chunk.days.map((dayEntry, index) => ({
-            ...dayEntry,
-            day: index + 1,
-          }));
-
-          dietPlanChunks.push(...updatedDays);
-          success = true;
-        } catch (error) {
-          console.error(
-            `Retry failed for Day ${day1Date.toDateString()}:`,
-            error.message
-          );
-          console.log("Retrying...");
-        }
+        dietPlanChunks.push(...updatedDays);
+      } catch (error) {
+        console.error(
+          `Failed to generate diet plan for Day ${day1Date.toDateString()}:`,
+          error.message
+        );
+        throw error;
       }
     }
 
+    // Save diet plan to database
     const dietPlan = new DietPlan({
       userId,
       startDate,
@@ -126,17 +114,23 @@ dietPlanQueue.process(CONCURRENCY, async (job, done) => {
     await dietPlan.save();
     console.log(`Diet plan saved successfully for userId: ${userId}`);
 
+    // Add PDF generation job to the queue
     console.log(`Adding PDF generation job to pdfQueue for userId: ${userId}`);
     await pdfQueue.add({ userId });
 
     done(null, { success: true });
-
-    console.log("Batch of jobs completed. Waiting 3 seconds before next batch...");
-    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-
-    processingBatch = false; // Allow next batch to start
   } catch (error) {
     console.error("Diet plan job failed:", error.message);
     done(error);
+  }
+});
+
+// Add delay between batches
+dietPlanQueue.on("completed", async (job) => {
+  console.log(`Job completed for userId: ${job.data.userId}`);
+  const activeJobs = await dietPlanQueue.getActive();
+  if (activeJobs.length === 0) {
+    console.log("Batch of jobs completed. Waiting 3 seconds before next batch...");
+    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
   }
 });
