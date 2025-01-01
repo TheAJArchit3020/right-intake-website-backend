@@ -14,8 +14,8 @@ const connectDB = require("./config/db");
 const dietPlanQueue = require("./services/RedisandBullQueue");
 const pdfQueue = require("./services/pdfBullQueue");
 
-const CONCURRENCY = 2; // Number of concurrent jobs to process
-const DELAY_BETWEEN_BATCHES = 3000; // Delay in milliseconds
+const CONCURRENCY = 20; 
+const DELAY_BETWEEN_BATCHES = 3000; 
 
 connectDB()
   .then(() => {
@@ -37,7 +37,7 @@ connectDB()
       const user = await User.findById(userId);
       if (!user) throw new Error("User not found");
   
-      const totalDays = 1;
+      const totalDays = 30;
       const startDate = new Date();
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + totalDays);

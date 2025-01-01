@@ -40,13 +40,13 @@ pdfQueue.process(1, async (job, done) => {
       throw new Error("PDF generation failed: Buffer is empty");
     }
 
-    // console.log(`Sending diet plan email to ${user.email}`);
+    console.log(`Sending diet plan email to ${user.email}`);
 
-    // const emailContent = generateEmailContent();
+    const emailContent = generateEmailContent();
 
-    // await sendDietPlanEmail(user.email, "Your Customized Diet Plan", emailContent, pdfBuffer);
+    await sendDietPlanEmail(user.email, "Your Customized Diet Plan", emailContent, pdfBuffer);
 
-    // console.log(`Email sent successfully for userId: ${userId}`);
+    console.log(`Email sent successfully for userId: ${userId}`);
     done(null, { success: true });
   } catch (error) {
     console.error(`PDF job failed for userId: ${job.data.userId}. Error:`, error.message);
