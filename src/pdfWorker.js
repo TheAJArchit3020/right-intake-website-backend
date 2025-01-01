@@ -19,7 +19,7 @@ connectDB()
   });
 
 
-pdfQueue.process(21, async (job, done) => {
+pdfQueue.process(1, async (job, done) => {
   try {
     console.log(`Processing PDF generation job for userId: ${job.data.userId}`);
     const { userId } = job.data;
