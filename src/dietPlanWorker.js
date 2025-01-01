@@ -14,7 +14,7 @@ const connectDB = require("./config/db");
 const dietPlanQueue = require("./services/RedisandBullQueue");
 const pdfQueue = require("./services/pdfBullQueue");
 
-const CONCURRENCY = 5; // Number of concurrent jobs to process
+const CONCURRENCY = 2; // Number of concurrent jobs to process
 const DELAY_BETWEEN_BATCHES = 3000; // Delay in milliseconds
 
 connectDB()
@@ -33,8 +33,7 @@ connectDB()
       const { userId } = job.data;
   
       if (!userId) throw new Error("Missing userId in job data");
-  
-      // Fetch user data and generate diet plan (existing logic)
+
       const user = await User.findById(userId);
       if (!user) throw new Error("User not found");
   
@@ -108,27 +107,15 @@ connectDB()
   
       done(null, { success: true });
   
-      // Increment completed jobs in the current batch
       completedJobsInBatch++;
   
-      // Check if all jobs in the current batch are complete
       if (completedJobsInBatch === CONCURRENCY) {
         console.log("Batch of jobs completed. Waiting 3 seconds before next batch...");
         await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-        completedJobsInBatch = 0; // Reset for the next batch
+        completedJobsInBatch = 0; 
       }
     } catch (error) {
       console.error("Diet plan job failed:", error.message);
       done(error);
     }
   });
-
-// Add delay between batches
-dietPlanQueue.on("completed", async (job) => {
-  console.log(`Job completed for userId: ${job.data.userId}`);
-  const activeJobs = await dietPlanQueue.getActive();
-  if (activeJobs.length === 0) {
-    console.log("Batch of jobs completed. Waiting 3 seconds before next batch...");
-    await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
-  }
-});
