@@ -25,49 +25,47 @@ connectDB()
     console.error("Worker MongoDB connection error:", error);
   });
 
-dietPlanQueue.process(CONCURRENCY, async (job, done) => {
-  try {
-    console.log(`Processing diet plan job for userId: ${job.data.userId}`);
-    const { userId } = job.data;
+  let completedJobsInBatch = 0;
 
-    if (!userId) throw new Error("Missing userId in job data");
-
-    // Fetch user data
-    const user = await User.findById(userId);
-    if (!user) throw new Error("User not found");
-
-    const totalDays = 1; // Total days for the diet plan
-    const startDate = new Date();
-    const endDate = new Date(startDate);
-    endDate.setDate(startDate.getDate() + totalDays);
-
-    const dietPlanChunks = [];
-    const systemPrompt = generateSystemPrompt();
-
-    // Generate diet plan
-    for (let daysOffset = 0; daysOffset < totalDays; daysOffset++) {
-      const day1Date = new Date(startDate);
-      day1Date.setDate(startDate.getDate() + daysOffset);
-
-      const weekdaysFull = [
-        "Sunday",
-        "Monday",
-        "Tuesday",
-        "Wednesday",
-        "Thursday",
-        "Friday",
-        "Saturday",
-      ];
-      const day1MealType = user.nonVegDays.includes(
-        weekdaysFull[day1Date.getDay()]
-      )
-        ? "Non-Veg"
-        : "Veg";
-
-      console.log(`Generating prompt for Day ${day1Date.toDateString()}`);
-      const prompt = generateDietPlanPrompt(user, day1Date, day1MealType);
-
-      try {
+  dietPlanQueue.process(CONCURRENCY, async (job, done) => {
+    try {
+      console.log(`Processing diet plan job for userId: ${job.data.userId}`);
+      const { userId } = job.data;
+  
+      if (!userId) throw new Error("Missing userId in job data");
+  
+      // Fetch user data and generate diet plan (existing logic)
+      const user = await User.findById(userId);
+      if (!user) throw new Error("User not found");
+  
+      const totalDays = 1;
+      const startDate = new Date();
+      const endDate = new Date(startDate);
+      endDate.setDate(startDate.getDate() + totalDays);
+  
+      const dietPlanChunks = [];
+      const systemPrompt = generateSystemPrompt();
+  
+      for (let daysOffset = 0; daysOffset < totalDays; daysOffset++) {
+        const day1Date = new Date(startDate);
+        day1Date.setDate(startDate.getDate() + daysOffset);
+  
+        const weekdaysFull = [
+          "Sunday",
+          "Monday",
+          "Tuesday",
+          "Wednesday",
+          "Thursday",
+          "Friday",
+          "Saturday",
+        ];
+        const day1MealType = user.nonVegDays.includes(
+          weekdaysFull[day1Date.getDay()]
+        )
+          ? "Non-Veg"
+          : "Veg";
+  
+        const prompt = generateDietPlanPrompt(user, day1Date, day1MealType);
         const response = await retryRequest(() =>
           axios.post(
             "https://api.openai.com/v1/chat/completions",
@@ -85,45 +83,45 @@ dietPlanQueue.process(CONCURRENCY, async (job, done) => {
             }
           )
         );
-
+  
         const rawResponse = response.data.choices[0].message.content;
         const chunk = extractWrappedJSON(rawResponse);
-
+  
         const updatedDays = chunk.days.map((dayEntry, index) => ({
           ...dayEntry,
           day: index + 1,
         }));
-
+  
         dietPlanChunks.push(...updatedDays);
-      } catch (error) {
-        console.error(
-          `Failed to generate diet plan for Day ${day1Date.toDateString()}:`,
-          error.message
-        );
-        throw error;
       }
+  
+      const dietPlan = new DietPlan({
+        userId,
+        startDate,
+        endDate,
+        days: dietPlanChunks,
+      });
+      await dietPlan.save();
+      console.log(`Diet plan saved successfully for userId: ${userId}`);
+  
+      await pdfQueue.add({ userId });
+  
+      done(null, { success: true });
+  
+      // Increment completed jobs in the current batch
+      completedJobsInBatch++;
+  
+      // Check if all jobs in the current batch are complete
+      if (completedJobsInBatch === CONCURRENCY) {
+        console.log("Batch of jobs completed. Waiting 3 seconds before next batch...");
+        await new Promise((resolve) => setTimeout(resolve, DELAY_BETWEEN_BATCHES));
+        completedJobsInBatch = 0; // Reset for the next batch
+      }
+    } catch (error) {
+      console.error("Diet plan job failed:", error.message);
+      done(error);
     }
-
-    // Save diet plan to database
-    const dietPlan = new DietPlan({
-      userId,
-      startDate,
-      endDate,
-      days: dietPlanChunks,
-    });
-    await dietPlan.save();
-    console.log(`Diet plan saved successfully for userId: ${userId}`);
-
-    // Add PDF generation job to the queue
-    console.log(`Adding PDF generation job to pdfQueue for userId: ${userId}`);
-    await pdfQueue.add({ userId });
-
-    done(null, { success: true });
-  } catch (error) {
-    console.error("Diet plan job failed:", error.message);
-    done(error);
-  }
-});
+  });
 
 // Add delay between batches
 dietPlanQueue.on("completed", async (job) => {
