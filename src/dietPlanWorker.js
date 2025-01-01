@@ -34,7 +34,7 @@ connectDB()
       const user = await User.findById(userId);
       if (!user) throw new Error("User not found");
   
-      const totalDays = 1; 
+      const totalDays = 30; 
       const startDate = new Date();
       const endDate = new Date(startDate);
       endDate.setDate(startDate.getDate() + totalDays);
