@@ -24,7 +24,7 @@ connectDB()
   .catch((error) => {
     console.error("Worker MongoDB connection error:", error);
   });
-  dietPlanQueue.process(16, async (job, done) => {
+  dietPlanQueue.process(30, async (job, done) => {
     try {
       console.log(`Processing diet plan job for userId: ${job.data.userId}`);
       const { userId } = job.data;

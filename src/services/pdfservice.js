@@ -2,14 +2,21 @@ const puppeteer = require("puppeteer");
 const path = require("path");
 const fs = require("fs");
 
+const logoPath = path.resolve(__dirname, "rightIntakeLogo.png");
+const logoBase64 = fs.readFileSync(logoPath, "base64");
+
 const generateDietPlanPDF = async (dietPlan) => {
   const browser = await puppeteer.launch({
     headless: true,
-    args: ['--no-sandbox', '--disable-setuid-sandbox', '--disable-dev-shm-usage'],
+    args: [
+      "--no-sandbox",
+      "--disable-setuid-sandbox",
+      "--disable-dev-shm-usage",
+      "--single-process", 
+      "--disable-gpu",
+    ],
   });
 
-  const logoPath = path.resolve(__dirname, "rightIntakeLogo.png");
-  const logoBase64 = fs.readFileSync(logoPath, "base64");
   const generateHTML = (day, dayNumber, isFirstPage) => `
   <!DOCTYPE html>
   <html lang="en">
