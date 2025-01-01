@@ -14,7 +14,7 @@ const connectDB = require("./config/db");
 const dietPlanQueue = require("./services/RedisandBullQueue");
 const pdfQueue = require("./services/pdfBullQueue");
 
-const CONCURRENCY = 20; // Number of concurrent jobs to process
+const CONCURRENCY = 5; // Number of concurrent jobs to process
 const DELAY_BETWEEN_BATCHES = 3000; // Delay in milliseconds
 
 connectDB()
