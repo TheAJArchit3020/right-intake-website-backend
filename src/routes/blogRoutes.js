@@ -25,13 +25,13 @@ router.post("/create", verifyToken, async (req, res) => {
       title,
       date,
       banner,
-      tags: tags.split(",").map((tag) => tag.trim()),
+      tags,
       preview,
       content,
       metaTitle,
       metaDescription,
       ogImage,
-      keywords: keywords.split(",").map((k) => k.trim()),
+      keywords,
     });
 
     await newBlog.save();
