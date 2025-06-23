@@ -13,9 +13,11 @@ router.post("/create", verifyToken, async (req, res) => {
       banner,
       tags,
       preview,
-      ctaText,
-      ctaLink,
       content,
+      metaTitle,
+      metaDescription,
+      ogImage,
+      keywords,
     } = req.body;
 
     const newBlog = new Blog({
@@ -25,11 +27,11 @@ router.post("/create", verifyToken, async (req, res) => {
       banner,
       tags: tags.split(",").map((tag) => tag.trim()),
       preview,
-      cta: {
-        text: ctaText,
-        link: ctaLink,
-      },
       content,
+      metaTitle,
+      metaDescription,
+      ogImage,
+      keywords: keywords.split(",").map((k) => k.trim()),
     });
 
     await newBlog.save();

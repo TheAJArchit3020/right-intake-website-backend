@@ -1,13 +1,6 @@
 // models/Blog.js
 const mongoose = require("mongoose");
 
-const ContentSchema = new mongoose.Schema({
-  heading: String,
-  paragraph: String,
-  image: String,
-  imageAlt: String,
-});
-
 const BlogSchema = new mongoose.Schema({
   slug: { type: String, required: true, unique: true },
   title: String,
@@ -15,11 +8,18 @@ const BlogSchema = new mongoose.Schema({
   banner: String,
   tags: [String],
   preview: String,
-  cta: {
-    text: String,
-    link: String,
-  },
-  content: [ContentSchema],
+  // SEO fields
+  metaTitle: String,
+  metaDescription: String,
+  ogImage: String,
+  keywords: [String],
+  // Block-based content
+  content: [
+    {
+      type: { type: String },
+      data: mongoose.Schema.Types.Mixed,
+    },
+  ],
 });
 
 module.exports = mongoose.model("Blog", BlogSchema);
