@@ -13,6 +13,11 @@ const BlogSchema = new mongoose.Schema({
   metaDescription: String,
   ogImage: String,
   keywords: [String],
+  pinned: {
+    type: Boolean,
+    default: false,
+  },
+
   // Block-based content
   content: [
     {

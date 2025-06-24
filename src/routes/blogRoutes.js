@@ -96,4 +96,13 @@ router.delete("/delete-blog/:id", verifyToken, async (req, res) => {
   }
 });
 
+router.get("/pinned", async (req, res) => {
+  try {
+    const pinnedBlogs = await Blog.find({ pinned: true }).sort({ date: -1 });
+    res.json(pinnedBlogs);
+  } catch (err) {
+    res.status(500).json({ message: "Failed to fetch pinned blogs" });
+  }
+});
+
 module.exports = router;
