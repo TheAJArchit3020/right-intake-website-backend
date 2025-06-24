@@ -83,7 +83,7 @@ router.put("/update-blog/:id", async (req, res) => {
   }
 });
 
-router.delete("/delete-blog/:id", async (req, res) => {
+router.delete("/delete-blog/:id", verifyToken, async (req, res) => {
   try {
     const deleted = await Blog.findByIdAndDelete(req.params.id);
     if (!deleted) {
